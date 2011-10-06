@@ -5,12 +5,17 @@ class Utils
     return url if url[0..6] == "http://"
     tmp = current_page.split("/")
 
-    if current_page[current_page.length - 1] != "/"
+    if current_page.strip[current_page.strip.length - 1] != "/"
       tmp.pop
     end
 
     if current_page.index("/", 7).nil?
       return tmp.join("/") + "/" + url
+    else
+      if url[0] == "/"
+        last_index = current_page.index("/", 7)
+        return current_page[0..(last_index - 1)] + url
+      end
     end
 
     url_parts = url.split("/")
