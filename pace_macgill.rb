@@ -106,16 +106,16 @@ class PaceMacgill
         tmp = x.split(" ")
         x = tmp[0].to_f
 
-        unless tmp[1].nil? || !tmp.inclde?("/")
-          tmp = tmp.split("/")
+        unless tmp[1].nil? || !tmp[1].include?("/")
+          tmp = tmp[1].split("/")
           x += tmp[0].to_f/tmp[1].to_f
         end
 
         tmp = y.split(" ")
         y = tmp[0].to_f
 
-        unless tmp[1].nil? || !tmp.inclde?("/")
-          tmp = tmp.split("/")
+        unless tmp[1].nil? || !tmp[1].include?("/")
+          tmp = tmp[1].split("/")
           y += tmp[0].to_f/tmp[1].to_f
         end
 

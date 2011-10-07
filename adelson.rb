@@ -48,7 +48,7 @@ class Adelson
         exhibitions << exhibition
       end
     end
-    exhibitions << find_upcoming_exhibitions()
+    exhibitions << find_upcoming_exhibitions
 
     return exhibitions
   end
@@ -108,8 +108,7 @@ class Adelson
       exhibition[:title] = page.search("#leftcolumn h1").first.inner_text.strip
       exhibition[:short_desc] = page.search("#leftcolumn h2").first.inner_text.strip rescue nil
       tmp = page.search("#exhib_daterange").first.inner_text.strip
-      year = tmp.split(",").last.strip
-      exhibition[:start_date] = tmp.split("-").first.strip + ", #{year}"
+      exhibition[:start_date] = tmp.split("-").first.strip
       exhibition[:end_date] = tmp.split("-").last.strip
     end
 
