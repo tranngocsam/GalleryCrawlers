@@ -94,35 +94,12 @@ class PaceMacgill
       image_tag = page.search("#content div:first img")[0]
       work[:image_url] = Utils.get_full_url(image_tag[:src], href)
       work[:title] = image_tag[:alt]
-      work[:long_description] = page.search("#content #descriptions")[0].inner_text
+      description = page.search("#content #descriptions")[0].inner_html
+      description_text = Utils.remove_html_tags(description)
+      work[:long_description] = description_text
       tmp = work[:long_description].split("\n")
-      tmp = tmp[3].split(" ") rescue nil
-      unit = tmp.pop unless tmp.nil?
-      tmp = tmp.join(" ") unless tmp.nil?
-      tmp = tmp.split("x") unless tmp.nil?
-      unless tmp.nil?
-        x = tmp[0]
-        y = tmp[1]
-        tmp = x.split(" ")
-        x = tmp[0].to_f
-
-        unless tmp[1].nil? || !tmp[1].include?("/")
-          tmp = tmp[1].split("/")
-          x += tmp[0].to_f/tmp[1].to_f
-        end
-
-        tmp = y.split(" ")
-        y = tmp[0].to_f
-
-        unless tmp[1].nil? || !tmp[1].include?("/")
-          tmp = tmp[1].split("/")
-          y += tmp[0].to_f/tmp[1].to_f
-        end
-
-        work[:width] = x
-        work[:height] = y
-        work[:unit] = unit
-      end
+      tmp = Utils.get_dimensions(tmp[3])
+      work = work.merge(tmp)
     end
 
     return work

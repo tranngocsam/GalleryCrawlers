@@ -103,27 +103,8 @@ class BarbaraMathes
           
           unless str.nil?
             str = str.split(";").first
-            work[:unit] = str.split(/[\s]+/).last
-            x = str.split("x").first
-            y = str.split("x").last
-            numbers = x.split(" ")
-            x = numbers[0].to_f
-
-            unless numbers[1].nil? || !numbers[1].include?("/")
-              numbers = numbers[1].split("/")
-              x += numbers[0].to_f/numbers[1].to_f
-            end
-
-            numbers = y.split(" ")
-            y = numbers[0].to_f
-
-            unless numbers[1].nil? || !numbers[1].include?("/")
-              numbers = numbers[1].split("/")
-              y += numbers[0].to_f/numbers[1].to_f
-            end
-
-            work[:width] = x
-            work[:height] = y
+            tmp = Utils.get_dimensions(str)
+            work = work.merge(tmp)
           end
         end
         

@@ -35,4 +35,39 @@ class Utils
 
     return tmp.join("/") + "/" + url_parts.join("/")
   end
+  
+  def self.remove_html_tags(html)
+    return nil if html.nil?
+    html = html.strip.gsub(/<\/?[i|b|u|a|span|em|big|strong|small|font|strike|tt]>/, "")
+    return html.gsub(/<\/?[^>]*>/, "\n").strip
+  end
+  
+  def Utils.get_dimensions(str, dimension_split = "x", fraction_split = " ")
+    work = {}
+    unless str.nil? || str.strip == ""
+      work[:unit] = str.split(/[\s]+/).last
+      x = str.split(dimension_split).first
+      y = str.split(dimension_split).last
+      numbers = x.split(fraction_split)
+      x = numbers[0].to_f
+
+      unless numbers[1].nil? || !numbers[1].include?("/")
+        numbers = numbers[1].split("/")
+        x += numbers[0].to_f/numbers[1].to_f
+      end
+
+      numbers = y.split(fraction_split)
+      y = numbers[0].to_f
+
+      unless numbers[1].nil? || !numbers[1].include?("/")
+        numbers = numbers[1].split("/")
+        y += numbers[0].to_f/numbers[1].to_f
+      end
+
+      work[:width] = x
+      work[:height] = y
+    end
+    
+    return work
+  end
 end
