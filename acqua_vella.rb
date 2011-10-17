@@ -132,7 +132,7 @@ class AcquaVella
       exhibition[:artist] = page.search("#midcol_left h4").first.inner_text.strip
       time = page.search("#midcol_left em").first.inner_text.strip
       exhibition[:start_date] = time.split(",").first.split("-").first.strip
-      exhibition[:start_date] = time.split("-").last.strip
+      exhibition[:end_date] = time.split("-").last.strip
       exhibition[:long_desc] = page.search("#midcol_left p").first.inner_text.strip
     end
 
