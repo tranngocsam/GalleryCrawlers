@@ -11,10 +11,10 @@ class Gagosian
     }
   end
   def find_gallery
-      full_address={}
-    @a.get('http://www.gagosian.com/contact/') do |page|
-      arr_add = page.search("#content").inner_html.split("</address>")        
-      i=0
+    url = 'http://www.gagosian.com/contact/'
+     full_address=[]
+    @a.get(url) do |page|
+      arr_add = page.search("#content").inner_html.split("</address>")
       arr_add.each { |add|        
         tmp= Utils.remove_html_tags(add).split("\n")
         #Loai di phan tu rong
@@ -25,6 +25,11 @@ class Gagosian
               tmp[item,1]=[]
             end        
           end         
+          for item in 0...tmp.length
+            if tmp[item] == "" 
+              tmp[item,1]=[]
+            end        
+          end          
         address={}
         address[:title] = tmp[0].strip  
         address[ :street] = tmp[1].strip
@@ -34,11 +39,13 @@ class Gagosian
         address[:phone] = tmp[3].split(" ").last.strip
         address[:fax] = tmp[4].split(" ").last.strip
         address[:email] = tmp[5].strip
-        address[:full] = address[:street] + "," + address[:city] + "," + address[:state] + "," + address[:zipcode]
-        address[:map] = "http://maps.google.com/?q=#{address[:full]}"
+        address[:hours] = tmp[6].split(":").last.strip
+        address[:full] = address[:street] + "," + address[:city] + "," + address[:state] + "," + address[:zipcode]        
+        page.search("#content address a.link").each do |text| 
+         address[:map] =  text[:href]
+        end
         address[:web_url] = "http://www.gagosian.com"
-        full_address[i]= address
-        i+=1
+        full_address<< address        
     end        
       }
     end
@@ -46,13 +53,37 @@ class Gagosian
   end
   
   def find_exhibitions
-    url = "http://www.gagosian.com/current/"    
+    url = "http://www.gagosian.com/current/"   
+    url1 = "http://www.gagosian.com/past/"
+    url2="http://www.gagosian.com/upcoming/"
     exhibition = []
     @a.get(url) do |page|
        page.search("#curr_cont .exhib_current .exhiblink a").each do |text|
          link  = Utils.get_full_url(text[:href],url)
-         exhibition <<  find_current_exhibition(link)          
+         exhibition <<  find_exhibition(link)          
        end
+    end
+    @a.get(url1) do |page|
+      page.search("#twocol_right .objvert .d-thumb a").each do |text|
+        link  = Utils.get_full_url(text[:href],url)
+         exhibition <<  find_exhibition(link)          
+      end
+    end
+      @a.get(url2) do |page|
+      page.search("#twocol_right .objvert .d-thumb a").each do |text|
+         link  = Utils.get_full_url(text[:href],url)
+         if link.nil?
+            upcoming = {}
+            upcoming[:address] = page.search("#twocol_right .objvert .gallery").inner_text
+            upcoming[:title] =  page.search("#twocol_right .objvert .name").inner_text
+              year = page.search("#twocol_right .objvert .date").split("-")[1].split(",")[1]
+              upcoming[:start_date] = page.search("#twocol_right .objvert .date").split("-")[0] + "," + year
+              upcoming[:end_date] = page.search("#twocol_right .objvert .date").split("-")[1] 
+              exhibition << upcoming
+         else
+           exhibition <<  find_exhibition(link)
+        end
+      end
     end
     return exhibition
   end
@@ -74,7 +105,7 @@ class Gagosian
     return artists
   end
   
-  def find_works
+  def find_shops
     artists = {}
     url = "http://www.gagosian.com/shop/"
     @a.get(url) do |page|
@@ -85,7 +116,7 @@ class Gagosian
           title = tmp[1].strip rescue nil          
           work = {}       
           work[:title]=title
-          work = find_work(link,work) unless link.nil?
+          work = find_shop(link,work) unless link.nil?
           if artists[artist_name].nil?
             artists[artist_name]=[]
           end
@@ -97,43 +128,106 @@ class Gagosian
   
   protected
   
-  def find_current_exhibition(url,exhibitions={})
+  def find_exhibition(url,exhibitions={})
     @a.get(url) { |page|       
         title_start_end_date = Utils.remove_html_tags(page.search("#subhead1 h3").inner_html).split("\n")
-        exhibitions[:title] = title_start_end_date.first
+        subinfo = Utils.remove_html_tags(page.search("#subinfo").inner_html).split("\n")
+        add = subinfo[0,3]
+        for item in 0...add.length
+          if add[item] == ""
+            add[item,1]=[]
+          end
+        end
+        subinfo.each { |i|           
+          unless i.scan("Hours").last.nil?
+            exhibitions[:hours] = i.split(":")[1]
+            break
+          end
+        }
+        exhibitions[:address] = add
         exhibitions[:artist] = page.search("#subhead1 .gNor").inner_text  
-        exhibitions[:startdate] = title_start_end_date.last.split("-").first + "," +title_start_end_date.last.split("-").last.split(",").last
-        exhibitions[:enddate] = title_start_end_date.last.split("-").last+"," +title_start_end_date.last.split("-").last.split(",").last
-        tmp = Utils.remove_html_tags(page.search("#threecol_mid").inner_html).split("\n")
+        exhibitions[:title] = title_start_end_date.first  
+        exhibitions[:start_date] = title_start_end_date.last.split("-").first + "," +title_start_end_date.last.split("-").last.split(",").last
+        exhibitions[:end_date] = title_start_end_date.last.split("-").last
+        tmp =page.search("#threecol_mid").inner_html.split("<hr>")[0]
        if !tmp.empty?
         #Vong lap nay xoa di cac ky tu trang con thua lai
-          for item in 0...tmp.length/2
-            if tmp[item] == "" 
-              tmp[item,1]=[]
+        tmp1=Utils.remove_html_tags(tmp).split("\n")
+          for item in 0...tmp1.length/2
+            if tmp1[item] == "" 
+              tmp1[item,1]=[]
             end        
-          end       
-          tmp[0,2]=[]
-          for item in 0...tmp.length/2
-            if tmp[item] == "" 
-              tmp[item,1]=[]
+          end                 
+          for item in 0...tmp1.length/2
+            if tmp1[item] == "" 
+              tmp1[item,1]=[]
             end        
           end
-        exhibitions[:full_desc] = tmp
+          index = 0
+          for i in 0...tmp1.length/2 
+            unless tmp1[i].scan("Download").last.nil?
+                index = i                
+            end
+          end
+          exhibitions[:full_desc] =tmp1[index+1,tmp1.length].to_s        
        end
     }
     return exhibitions
   end
   
   def find_artist(url,artist={})
-    @a.get(url) do |page|
-      #arr = page.search("#threecol_mid").inner_text.split("\n")
-      #str = page.search("#threecol_mid").inner_text.split("\n")[arr.length-1,1].last      
+    @a.get(url) do |page|      
       artist[:biography] = page.search("div#threecol_mid").inner_text
+      artist[:work] = find_work(url)
     end
     return artist
   end
   
-  def find_work(url,work={})
+  def find_work(url)
+    work = {}
+    
+    @a.get(url) do |page|
+      arr = Utils.remove_html_tags(page.search("#p_artists").inner_html).split("\n")
+      arr=arr.compact
+      
+        arr_image_data =  arr[arr.length - 14,1].inspect      
+        if arr_image_data.eql?("[\"\"]")
+        else
+          all_img = arr_image_data.split(",")[1,arr_image_data.length-1]
+          path ="http:" +  arr_image_data.split(",").first.split(":")[2].to_s.delete("\"").delete("\\")          
+          list_image_url = []
+          for i in 0...all_img.length
+          arr_img_name =  all_img[i].split("\\\"f1\\\"")[1,1]
+           unless arr_img_name.empty?
+             image_name = arr_img_name.to_s.delete("[]\":\\")                
+             if image_name.end_with?(".jpg")
+                image_url =path+ image_name
+                list_image_url << image_url               
+            end           
+           end
+          end
+           work[:image_url] =list_image_url
+          des_arr_all = arr_image_data.split("\\\"c\\\"")
+          list_short_des = []
+          list_title =[]
+          des_arr_all[1,des_arr_all.length-1].each { |item|
+            list_short_des << item.split("}")[0].delete(":")
+            list_title << item.split("}")[0].split(",")[0].split("\"")[1]
+             item.split("}")[0].delete(":").split("\\\\n").each { |item2|
+              unless item2.scan("inches").inspect.eql?("[]")
+                  tmp = item2.split("(").last.delete(")").delete("\\").delete("\"")                
+                  work = work.merge(Utils.get_dimensions(tmp.strip))
+              end            
+            }
+          }
+          work[:short_description] = list_short_des
+          work[:title] = list_title
+        end
+    end
+    return work
+  end
+  
+  def find_shop(url,work={})
     @a.get(url) do |page|
       work[:date] = page.search("#subinfo").inner_text.split("\n").first.strip rescue nil
       work[:image] = page.search("#threecol_mid .imgCap img").first[:src] rescue nil      
